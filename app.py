@@ -38,22 +38,23 @@ for ipo in ipos:
     indicative_listing = ipo['price_high'] + gmp_val
     gmp_pct = (gmp_val / ipo['price_high']) * 100 if ipo['price_high'] else 0
 
+    # HTML string ki indentation theek kardi gayi hai
+    html_card = f"""
+<div class="ipo-card">
+    <h3 style="margin:0;">{ipo['name']} <span class="badge-high">{ipo['type']}</span></h3>
+    <p style="margin: 2px 0 10px 0; font-size: 0.8em; color: gray;">Accuracy: {ipo['data_confidence']}</p>
+    <div class="metric-row">
+        <div><b>Price:</b> ₹{ipo['price_high']}</div>
+        <div><b>Est. Listing:</b> ₹{indicative_listing}</div>
+    </div>
+    <div class="metric-row">
+        <div><b>GMP:</b> ₹{gmp_val} <span style="color:green;">(+{gmp_pct:.1f}%)</span></div>
+        <div><b>Score:</b> {ipo['overall_score']}/100</div>
+    </div>
+</div>
+"""
     with st.container():
-        st.markdown(f'''
-        <div class="ipo-card">
-            <h3 style="margin:0;">{ipo['name']} <span class="badge-high">{ipo['type']}</span></h3>
-            <p style="margin: 2px 0 10px 0; font-size: 0.8em; color: gray;">Accuracy: {ipo['data_confidence']}</p>
-            
-            <div class="metric-row">
-                <div><b>Price:</b> ₹{ipo['price_high']}</div>
-                <div><b>Est. Listing:</b> ₹{indicative_listing}</div>
-            </div>
-            <div class="metric-row">
-                <div><b>GMP:</b> ₹{gmp_val} <span style="color:green;">(+{gmp_pct:.1f}%)</span></div>
-                <div><b>Score:</b> {ipo['overall_score']}/100</div>
-            </div>
-        </div>
-        ''', unsafe_allow_html=True)
+        st.markdown(html_card, unsafe_allow_html=True)
         
         with st.expander("📑 Detailed AI Analysis & Sources"):
             st.markdown(ipo['ai_summary'])
