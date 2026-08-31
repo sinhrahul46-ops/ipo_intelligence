@@ -9,7 +9,7 @@ init_db()
 # Page config for mobile layout
 st.set_page_config(page_title="IPO Intelligence", layout="centered", initial_sidebar_state="collapsed")
 
-# 100% Safe CSS (Compressed to avoid Streamlit Markdown bugs)
+# 100% Safe CSS (Compressed)
 st.markdown("""<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet"><style>
 :root{--bg:#0B1220; --card:#121B2E; --card-2:#17213A; --line:#243052; --line-soft:#1C2740; --text:#EDF1F7; --muted:#8FA0BC; --faint:#5C6C88; --brand:#4C7CF3; --brand-soft:#1C2A4D; --good:#34C77B; --good-soft:#12301F; --warn:#F0A93E; --warn-soft:#332512; --bad:#EF5B5B; --bad-soft:#331616; --gray:#57667F; --gray-soft:#1B2438;}
 .stApp {background: radial-gradient(1200px 500px at 50% -10%, #14203A 0%, rgba(20,32,58,0) 60%), var(--bg); color: var(--text); font-family: "IBM Plex Sans", -apple-system, sans-serif;}
@@ -41,13 +41,13 @@ header[data-testid="stHeader"] {display: none;}
 </style>""", unsafe_allow_html=True)
 
 # Custom Header
-st.markdown("""<div class="brand-row"><div class="brand-mark">₹</div><div class="brand-text">IPO Intelligence<small>Official-first · No-guess policy</small></div></div>""", unsafe_allow_html=True)
+st.markdown("""<div class="brand-row"><div class="brand-mark">₹</div><div class="brand-text">IPO Intelligence<small>OFFICIAL-FIRST · NO-GUESS POLICY</small></div></div>""", unsafe_allow_html=True)
 
 # Refresh Button
 if st.button("🔄 REFRESH DATA", use_container_width=True):
-    with st.spinner("Fetching official filings & checking GMP..."):
+    with st.spinner("Fetching Live Market Data..."):
         run_refresh()
-        st.success(f"Last verified: {datetime.now().strftime('%I:%M %p')} · Sources OK")
+        st.success(f"Last verified: {datetime.now().strftime('%I:%M %p')} · Data Updated")
 
 ipos = get_ipos()
 
@@ -55,10 +55,14 @@ if not ipos:
     st.info("No data available. Press 'Refresh Data'.")
 
 for ipo in ipos:
-    # Fetch GMP Data
+    # Safely fetch and round numbers (Fixes the long decimals and None errors)
     gmp_data = get_latest_gmp(ipo['id'])
-    gmp_val = gmp_data['gmp'] if gmp_data['gmp'] else 0
-    indicative_listing = (ipo.get('price_high', 0) or 0) + gmp_val
+    gmp_val = round(gmp_data['gmp'] if gmp_data['gmp'] else 0)
+    
+    price_low = ipo.get('price_low', 0) or 0
+    price_high = ipo.get('price_high', 0) or 0
+    issue_size = ipo.get('issue_size', 0) or 0
+    indicative_listing = round(price_high + gmp_val)
     
     # Calculate SVG Ring values
     score = ipo.get('overall_score', 0) or 0
@@ -73,8 +77,8 @@ for ipo in ipos:
     type_class = 'sme' if ipo.get('type') == 'SME' else 'mainboard'
     confidence = ipo.get('data_confidence', 'LIMITED')
 
-    # Safe HTML Card (Compressed)
-    html_card = f"""<div class="card"><div class="ledger"><i class="fact"></i><i class="cross"></i><i class="fact"></i><i class="fact"></i></div><div class="card-top"><div><div class="co-name">{ipo.get('name', 'Unknown')}</div><div style="margin-top:6px;"><span class="tag {type_class}">{ipo.get('type', 'Unknown')}</span><span class="tag" style="background:var(--gray-soft); color:#9AA8C2;">{confidence}</span></div></div><div class="ring-wrap"><svg viewBox="0 0 58 58" width="58" height="58"><circle cx="29" cy="29" r="25" fill="none" stroke="#1C2740" stroke-width="5"/><circle cx="29" cy="29" r="25" fill="none" stroke="{score_color}" stroke-width="5" stroke-linecap="round" stroke-dasharray="157" stroke-dashoffset="{offset}" transform="rotate(-90 29 29)"/></svg><div class="ring-hole"><b>{int(score)}</b><span>SCORE</span></div></div></div><div class="stat-grid"><div class="stat"><div class="k">Price Band</div><div class="v">₹{ipo.get('price_low', 0)}–{ipo.get('price_high', 0)}</div></div><div class="stat"><div class="k">GMP (Grey Market)</div><div class="v warn">₹{gmp_val}</div></div><div class="stat"><div class="k">Est. Listing Price</div><div class="v good">₹{indicative_listing}</div></div><div class="stat"><div class="k">Issue Size</div><div class="v">₹{ipo.get('issue_size', 0)} Cr</div></div></div></div>"""
+    # HTML Card Building
+    html_card = f"""<div class="card"><div class="ledger"><i class="fact"></i><i class="cross"></i><i class="fact"></i><i class="fact"></i></div><div class="card-top"><div><div class="co-name">{ipo.get('name', 'Unknown')}</div><div style="margin-top:6px;"><span class="tag {type_class}">{ipo.get('type', 'Unknown')}</span><span class="tag" style="background:var(--gray-soft); color:#9AA8C2;">{confidence}</span></div></div><div class="ring-wrap"><svg viewBox="0 0 58 58" width="58" height="58"><circle cx="29" cy="29" r="25" fill="none" stroke="#1C2740" stroke-width="5"/><circle cx="29" cy="29" r="25" fill="none" stroke="{score_color}" stroke-width="5" stroke-linecap="round" stroke-dasharray="157" stroke-dashoffset="{offset}" transform="rotate(-90 29 29)"/></svg><div class="ring-hole"><b>{int(score)}</b><span>SCORE</span></div></div></div><div class="stat-grid"><div class="stat"><div class="k">Price Band</div><div class="v">₹{price_low}–{price_high}</div></div><div class="stat"><div class="k">GMP (Grey Market)</div><div class="v warn">₹{gmp_val}</div></div><div class="stat"><div class="k">Est. Listing Price</div><div class="v good">₹{indicative_listing}</div></div><div class="stat"><div class="k">Issue Size</div><div class="v">₹{issue_size} Cr</div></div></div></div>"""
     
     st.markdown(html_card, unsafe_allow_html=True)
     
